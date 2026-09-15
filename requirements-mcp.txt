@@ -1,0 +1,3 @@
+-r requirements.txt
+# Latest maintained v1 release with the official FastMCP server interface.
+mcp==1.30.0

@@ -1,0 +1,41 @@
+# Local dependencies and generated files
+node_modules/
+dist/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Private collection data and credentials
+.env
+.env.*
+!.env.example
+.sportscards/
+data/
+private/
+backups/
+exports/
+evidence/
+originals/
+crops/
+previews/
+listing-prep/
+failed-uploads/
+*.sqlite*
+*.db
+session-token
+*.pem
+*.key
+storage-state*.json
+auth.json
+
+# Editor and operating system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
