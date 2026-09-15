@@ -54,7 +54,7 @@ export default function Analysis({ state, onCard, refresh }) {
       <div><small>Estimated net proceeds</small><strong>{money(summary.net_proceeds_cents)}</strong><span>After fees, postage, and packaging</span></div>
       <div><small>Estimated profit / loss</small><strong>{money(summary.profit_cents)}</strong><span>Only cards with both cost and value</span></div>
     </div>
-    <Notice>{summary.unvalued} cards have no supported current value. Estimated totals cover {summary.valued} valued cards only. Those cards cost {money(summary.valued_purchase_cost_cents)}. Unknown values are not zero. The full eBay history includes purchases outside these photos.</Notice>
+    <Notice>{summary.unvalued} cards have no supported current value. Estimated totals cover {summary.valued} valued cards only. Those cards cost {money(summary.valued_purchase_cost_cents)}. Unknown values are not zero. Purchase records can include cards outside this collection.</Notice>
     <p className="muted">Net proceeds assume one shipment per card. Bundling cards can reduce postage. These estimates do not predict future appreciation.</p>
     <p className="muted">{state.photos.length} photos uploaded · {state.observations.length} card views · {state.cards.length} physical cards · {summary.matched} purchases matched · {summary.researched} research reviews · {summary.valued} with sold evidence</p>
     <details className="cost-settings"><summary>Selling cost assumptions</summary><p>{report.costs.basis} Confirm envelope eligibility before using lower postage for a thin, low-value card.</p><form onSubmit={saveCosts}><div className="form-grid">

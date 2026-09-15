@@ -62,6 +62,8 @@ Press `Ctrl+C` in the terminal to stop the application.
 The application starts with an empty collection.
 Upload your own photos through **Photo inbox**.
 Read the [collection workflow](docs/WORKFLOW.md) for the next steps.
+To try the full workflow first, use the [synthetic collection walkthrough](docs/WALKTHROUGH.md).
+It includes generated photos, example evidence, a saved simulation, and a ready listing draft.
 
 ## Connect Codex
 
@@ -92,7 +94,9 @@ Signing into eBay does not turn this MCP server into an eBay API client.
 ## Data and limits
 
 Private data defaults to `.sportscards` in your home directory.
-Set `SPORTSCARDS_DATA` to use another directory outside this repository.
+Use setup's `--data-dir` option to select another directory outside this repository.
+Start the dashboard with the matching command that setup prints.
+An explicit data-directory argument overrides `SPORTSCARDS_DATA`.
 Keep photos, purchase exports, account records, browser sessions, and backups out of Git.
 The dashboard has no account login and binds to the local computer by default.
 Do not expose its port to the public internet.
@@ -123,6 +127,7 @@ Build the dashboard with `npm run build`.
 Tests use synthetic fixtures and temporary collection directories.
 CI checks the Python tests and dashboard build.
 Real phone uploads and platform-specific behavior require separate verification.
+See the [update validation record](docs/VALIDATION.md) for the five published improvements.
 
 Contributions are welcome. Include reproduction steps and relevant verification results.
 Use synthetic cards and account records in issues, screenshots, tests, and examples.
