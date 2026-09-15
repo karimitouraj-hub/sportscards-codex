@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -26,18 +27,39 @@ def server_config(root, data_dir=None):
 
 def configured_data(selected):
     args = (selected or {}).get('args', [])
-    return args[3] if len(args) == 4 and args[:3] == ['-m', 'server.mcp', '--data'] else None
+    return args[3] if len(args) == 4 and args[0] == '-m' and args[2] == '--data' else None
+
+
+def validate_managed_settings(selected, expected):
+    """Refuse manual extensions instead of silently removing server settings."""
+    if not isinstance(selected, dict) or set(selected) - set(expected):
+        raise ValueError('The SportsCards server contains manual settings. Preserve them with the manual guide in docs/INSTALL.md.')
+    args = selected.get('args', [])
+    if (not isinstance(args, list) or len(args) not in (2, 4)
+            or args[0] != '-m' or not isinstance(args[1], str) or not args[1]
+            or (len(args) == 4 and (args[2] != '--data' or not isinstance(args[3], str) or not args[3]))):
+        raise ValueError('The SportsCards arguments contain manual changes. Review docs/INSTALL.md before replacing them.')
+
+
+def dashboard_command(selected):
+    command = ['python', 'scripts/start.py']
+    data_dir = configured_data(selected)
+    if data_dir is not None:
+        command += ['--data-dir', data_dir]
+    return subprocess.list2cmdline(command) if os.name == 'nt' else shlex.join(command)
 
 
 def configure(root, data_dir=None):
     """Preserve unrelated TOML and refuse to replace an unmanaged SportsCards server."""
     path = Path(root) / '.codex' / 'config.toml'
-    original = path.read_text(encoding='utf-8') if path.exists() else ''
+    original_bytes = path.read_bytes() if path.exists() else b''
+    original = original_bytes.decode('utf-8-sig').replace('\r\n', '\n')
     parsed = tomllib.loads(original)
     existing = parsed.get('mcp_servers', {}).get('sportscards')
+    if existing is not None:
+        # Validate before interpreting arguments so manual data choices cannot be reset.
+        validate_managed_settings(existing, server_config(root))
     expected = server_config(root, data_dir if data_dir is not None else configured_data(existing))
-    if existing == expected:
-        return path
     if original.count(BEGIN) != original.count(END) or original.count(BEGIN) > 1:
         raise ValueError('The managed configuration markers are invalid. Review .codex/config.toml.')
     if BEGIN in original:
@@ -48,20 +70,27 @@ def configure(root, data_dir=None):
         managed_data = tomllib.loads(managed)
         if set(managed_data) != {'mcp_servers'} or set(managed_data['mcp_servers']) != {'sportscards'}:
             raise ValueError('The managed block contains other settings. Review .codex/config.toml.')
+        if managed_data['mcp_servers']['sportscards'] != existing:
+            raise ValueError('SportsCards settings extend outside the managed block. Review docs/INSTALL.md before replacing them.')
+        if existing == expected:
+            return path
         remaining = before + after
     elif existing is not None:
+        if existing == expected:
+            return path
         raise ValueError('An existing SportsCards configuration needs manual review. See docs/INSTALL.md.')
     else:
         remaining = original
     block = BEGIN + '[mcp_servers.sportscards]\n'
     block += ''.join(f'{key} = {json.dumps(value, ensure_ascii=False)}\n' for key, value in expected.items())
     updated = remaining.rstrip() + ('\n\n' if remaining.strip() else '') + block + END
-    if tomllib.loads(updated).get('mcp_servers', {}).get('sportscards') != expected:
-        raise ValueError('The generated configuration did not pass validation.')
+    expected_document = {**parsed, 'mcp_servers': {**parsed.get('mcp_servers', {}), 'sportscards': expected}}
+    if tomllib.loads(updated) != expected_document:
+        raise ValueError('The generated configuration would change unrelated settings. Review docs/INSTALL.md.')
     path.parent.mkdir(parents=True, exist_ok=True)
     if original:
         with tempfile.NamedTemporaryFile(prefix='config-', suffix='.toml.bak', dir=path.parent, delete=False) as backup:
-            backup.write(original.encode('utf-8'))
+            backup.write(original_bytes)
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as temporary:
         temporary.write(updated.encode('utf-8'))
         temporary_path = Path(temporary.name)
@@ -74,7 +103,7 @@ async def probe(root):
     from mcp.client.stdio import stdio_client
     import anyio
 
-    config = tomllib.loads((Path(root) / '.codex/config.toml').read_text(encoding='utf-8'))
+    config = tomllib.loads((Path(root) / '.codex/config.toml').read_text(encoding='utf-8-sig'))
     selected = config['mcp_servers']['sportscards']
     if selected != server_config(root, configured_data(selected)):
         raise ValueError('The project MCP settings differ from this checkout. Run setup or use the manual guide.')
@@ -119,7 +148,8 @@ def main():
     subprocess.run([python, str(Path(__file__).resolve()), '--probe'], cwd=ROOT, check=True)
     print('Open this repository in Codex. Trust it only after reviewing its contents.')
     print('Start a new conversation and ask: Use $sportscards and check status.')
-    print('Start the dashboard with: python scripts/start.py')
+    selected = tomllib.loads((ROOT / '.codex/config.toml').read_text(encoding='utf-8-sig'))['mcp_servers']['sportscards']
+    print('Start the dashboard with: ' + dashboard_command(selected))
 
 
 if __name__ == '__main__':

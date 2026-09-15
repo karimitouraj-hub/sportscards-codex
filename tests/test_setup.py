@@ -60,3 +60,82 @@ def test_repeat_setup_preserves_custom_collection_and_accepts_explicit_change(tm
     selected = tomllib.loads(config.read_text())['mcp_servers']['sportscards']
     assert selected == setup.server_config(tmp_path, second_data)
     assert not second_data.exists()
+
+
+@pytest.mark.parametrize('manual', [
+    'enabled = false\n',
+    'enabled_tools = ["status"]\n',
+    'unknown_future_setting = "preserve-me"\n',
+    '[mcp_servers.sportscards.env]\nSPORTSCARDS_DATA = "custom-private-cards"\n',
+])
+def test_manual_server_fields_are_never_discarded(tmp_path, manual):
+    config = setup.configure(tmp_path)
+    modified = config.read_text().replace(setup.END, manual + setup.END)
+    config.write_bytes(modified.replace('\n', '\r\n').encode('utf-8'))
+    original = config.read_bytes()
+    with pytest.raises(ValueError, match='manual settings'):
+        setup.configure(tmp_path)
+    assert config.read_bytes() == original
+    assert not list(config.parent.glob('*.bak'))
+
+
+def test_setting_after_marker_cannot_move_to_another_server(tmp_path):
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    config.write_text('[mcp_servers.other]\ncommand = "other-command"\n')
+    setup.configure(tmp_path)
+    config.write_text(config.read_text() + 'enabled = false\n')
+    original = config.read_bytes()
+    before = tomllib.loads(original.decode())
+    assert before['mcp_servers']['sportscards']['enabled'] is False
+    assert 'enabled' not in before['mcp_servers']['other']
+    with pytest.raises(ValueError):
+        setup.configure(tmp_path)
+    assert config.read_bytes() == original
+    assert tomllib.loads(config.read_text()) == before
+
+
+def test_supported_setting_outside_marker_requires_review_even_when_values_match(tmp_path):
+    config = setup.configure(tmp_path)
+    modified = config.read_text().replace('tool_timeout_sec = 120\n', '')
+    config.write_text(modified + 'tool_timeout_sec = 120\n')
+    original = config.read_bytes()
+    assert tomllib.loads(config.read_text())['mcp_servers']['sportscards'] == setup.server_config(tmp_path)
+    with pytest.raises(ValueError, match='outside the managed block'):
+        setup.configure(tmp_path)
+    assert config.read_bytes() == original
+
+
+@pytest.mark.parametrize('arguments', [
+    ['-m', 'server.mcp', '--data=custom-private-cards'],
+    ['-m', 'server.mcp', '--data', 'custom-private-cards', '--custom-option'],
+    ['server/mcp.py', '--data', 'custom-private-cards'],
+])
+def test_manual_argument_forms_do_not_reset_the_data_directory(tmp_path, arguments):
+    import json
+    config = setup.configure(tmp_path)
+    config.write_text(config.read_text().replace('args = ["-m", "server.mcp"]', 'args = ' + json.dumps(arguments)))
+    original = config.read_bytes()
+    with pytest.raises(ValueError, match='arguments contain manual changes'):
+        setup.configure(tmp_path)
+    assert config.read_bytes() == original
+
+
+def test_managed_module_repair_preserves_custom_data_and_backup_bytes(tmp_path):
+    data = tmp_path / 'private cards'
+    config = setup.configure(tmp_path, data)
+    modified = config.read_text().replace('server.mcp', 'server.old_mcp')
+    original = modified.replace('\n', '\r\n').encode('utf-8')
+    config.write_bytes(original)
+    setup.configure(tmp_path)
+    assert tomllib.loads(config.read_text())['mcp_servers']['sportscards'] == setup.server_config(tmp_path, data)
+    assert list(config.parent.glob('*.bak'))[0].read_bytes() == original
+
+
+def test_dashboard_command_uses_the_preserved_collection(tmp_path):
+    data = tmp_path / 'private cards'
+    selected = setup.server_config(tmp_path, data)
+    command = setup.dashboard_command(selected)
+    assert '--data-dir' in command
+    assert data.as_posix() in command
+    assert setup.dashboard_command(setup.server_config(tmp_path)) == 'python scripts/start.py'
