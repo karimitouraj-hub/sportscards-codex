@@ -46,3 +46,17 @@ def test_configuration_updates_only_managed_block(tmp_path):
     parsed = tomllib.loads(config.read_text())
     assert parsed['user_section']['keep'] is True
     assert parsed['mcp_servers']['sportscards']['args'] == ['-m', 'server.mcp']
+
+
+def test_repeat_setup_preserves_custom_collection_and_accepts_explicit_change(tmp_path):
+    first_data = tmp_path / 'private cards'
+    second_data = tmp_path / 'different private cards'
+    config = setup.configure(tmp_path, first_data)
+    setup.configure(tmp_path)
+    selected = tomllib.loads(config.read_text())['mcp_servers']['sportscards']
+    assert selected == setup.server_config(tmp_path, first_data)
+    assert not first_data.exists()
+    setup.configure(tmp_path, second_data)
+    selected = tomllib.loads(config.read_text())['mcp_servers']['sportscards']
+    assert selected == setup.server_config(tmp_path, second_data)
+    assert not second_data.exists()

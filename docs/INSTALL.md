@@ -56,7 +56,17 @@ Only remove a conflicting entry after saving its settings.
 If Codex cannot find the tools, confirm that its workspace is this checkout.
 Check whether project trust or an administrator policy prevents local MCP servers.
 Use manual configuration when your client does not load project settings.
-For a custom data directory, configure the same `SPORTSCARDS_DATA` value for the dashboard and MCP server.
+To select another collection for MCP:
+
+```text
+python scripts/setup.py --skip-install --data-dir /path/to/private-cards
+```
+
+Replace the example path with your own directory.
+Start the dashboard with `python scripts/start.py --data-dir /path/to/private-cards` using that same path.
+Repeat setup preserves this selection. Supply another `--data-dir` value to change it.
+The connection check still uses temporary data instead of your selected collection.
+For automatic setup, edit the project `.codex/config.toml` rather than a conflicting global server entry.
 The default directory is `~/.sportscards`.
 
 **Verified:** Automated tests cover preservation, repeat setup, managed updates, malformed TOML, and conflicting settings.

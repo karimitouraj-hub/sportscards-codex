@@ -14,20 +14,28 @@ BEGIN = '# BEGIN SportsCards managed MCP\n'
 END = '# END SportsCards managed MCP\n'
 
 
-def server_config(root):
+def server_config(root, data_dir=None):
     root = Path(root).resolve()
     python = root / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
-    return dict(command=python.as_posix(), args=['-m', 'server.mcp'], cwd=root.as_posix(),
+    args = ['-m', 'server.mcp']
+    if data_dir is not None:
+        args += ['--data', Path(data_dir).expanduser().resolve().as_posix()]
+    return dict(command=python.as_posix(), args=args, cwd=root.as_posix(),
                 startup_timeout_sec=30, tool_timeout_sec=120)
 
 
-def configure(root):
+def configured_data(selected):
+    args = (selected or {}).get('args', [])
+    return args[3] if len(args) == 4 and args[:3] == ['-m', 'server.mcp', '--data'] else None
+
+
+def configure(root, data_dir=None):
     """Preserve unrelated TOML and refuse to replace an unmanaged SportsCards server."""
     path = Path(root) / '.codex' / 'config.toml'
     original = path.read_text(encoding='utf-8') if path.exists() else ''
     parsed = tomllib.loads(original)
-    expected = server_config(root)
     existing = parsed.get('mcp_servers', {}).get('sportscards')
+    expected = server_config(root, data_dir if data_dir is not None else configured_data(existing))
     if existing == expected:
         return path
     if original.count(BEGIN) != original.count(END) or original.count(BEGIN) > 1:
@@ -68,14 +76,14 @@ async def probe(root):
 
     config = tomllib.loads((Path(root) / '.codex/config.toml').read_text(encoding='utf-8'))
     selected = config['mcp_servers']['sportscards']
-    if selected != server_config(root):
+    if selected != server_config(root, configured_data(selected)):
         raise ValueError('The project MCP settings differ from this checkout. Run setup or use the manual guide.')
     if not (Path(root) / 'dist/index.html').is_file():
         raise ValueError('The dashboard is not built. Run python scripts/setup.py.')
     # Validate the configured command against temporary data, never the real collection.
     with tempfile.TemporaryDirectory(prefix='sportscards-setup-') as data:
         params = StdioServerParameters(command=selected['command'],
-            args=selected['args'] + ['--data', data], cwd=selected['cwd'])
+            args=['-m', 'server.mcp', '--data', data], cwd=selected['cwd'])
         with anyio.fail_after(45):
             async with stdio_client(params) as (read, write):
                 async with ClientSession(read, write) as session:
@@ -94,6 +102,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--skip-install', action='store_true', help='Configure and verify installed dependencies.')
     parser.add_argument('--check', action='store_true', help='Verify the existing setup without changing configuration.')
+    parser.add_argument('--data-dir', type=Path, help='Set the MCP collection directory. Repeat setup preserves this selection.')
     parser.add_argument('--probe', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.probe:
@@ -102,7 +111,7 @@ def main():
     if not args.check:
         if not args.skip_install:
             subprocess.run([sys.executable, str(ROOT / 'scripts/start.py'), '--setup-only'], cwd=ROOT, check=True)
-        path = configure(ROOT)
+        path = configure(ROOT, args.data_dir)
         print(f'Configured: {path}', flush=True)
     python = server_config(ROOT)['command']
     if not Path(python).is_file():
