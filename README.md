@@ -108,6 +108,8 @@ This project provides no bulk scraper or mechanism to bypass access controls or 
 
 ## Development
 
+Read [Update and recover](docs/UPDATING.md) before updating an existing collection.
+
 Install the project dependencies through the launcher before these checks.
 Use the project interpreter for Python commands.
 
