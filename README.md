@@ -18,6 +18,7 @@ Each person keeps their collection and account access on their own computer.
 
 The MCP server does not connect to eBay or reuse your browser login.
 Browser work requires compatible browser tools in your Codex environment.
+See [Browser setup and manual fallback](docs/BROWSER_SETUP.md).
 You can also enter evidence manually.
 This project does not include browser tools, automatic marketplace synchronization, or a hosted AI service.
 
