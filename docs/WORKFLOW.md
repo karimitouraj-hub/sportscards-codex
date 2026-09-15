@@ -92,9 +92,11 @@ Read [Pricing engine](PRICING_ENGINE.md) before using scenario results for a sel
 7. Use your marketplace browser session to complete the authorized publication.
 8. Verify the resulting listing before recording it as live.
 
-Codex can prepare the private draft file described below.
-The MCP `selling_prep` tool reads and validates existing drafts.
-It does not create drafts or publish listings.
+Codex can create and update private drafts with `save_listing_draft`.
+The tool calculates identity signatures and photo hashes, then validates the candidate before saving it.
+Read `selling_prep` first and supply its current `manifest_sha256` to prevent conflicting updates.
+Supply the current card revision and the reviewed front and back observation IDs.
+The MCP tools do not publish listings.
 Codex needs compatible browser tools to operate a signed-in marketplace page.
 You can also publish the prepared package yourself.
 
@@ -109,8 +111,9 @@ Keep purchase costs and internal price guidance out of buyer-facing listing text
 ### Private draft file
 
 The application reads `listing-prep/current.json` inside the private collection directory.
-The dashboard and MCP server validate this file. Neither provides a draft editor.
-Codex needs local file tools to create or update it.
+The dashboard displays this file. The MCP `save_listing_draft` tool provides validated draft editing.
+Use the MCP tool for routine changes.
+The structure below documents the advanced local file format.
 
 Use this structure with values from the actual reviewed collection:
 

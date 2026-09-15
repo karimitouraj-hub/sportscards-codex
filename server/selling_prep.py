@@ -78,19 +78,20 @@ def _photo_requirements(path):
     return None
 
 
-def prep_report(store):
-    """Return a current validation of a private manifest. Never modify it."""
+def prep_report(store, manifest=None):
+    """Validate a supplied manifest or the current private file. Never modify it."""
     path = store.root / 'listing-prep' / 'current.json'
     empty = dict(batch_id=None, created_at=None, drafts=[], summary=dict(drafts=0, ready=0, needs_review=0),
                  package_url='/api/listing-prep/package', photo_gallery_url=DEFAULT_PHOTO_GALLERY_URL, status='empty')
-    if not path.exists():
-        return empty
-    if path.stat().st_size > MAX_MANIFEST_BYTES:
-        raise ValueError('The listing draft file is too large.')
-    try:
-        manifest = json.loads(path.read_text(encoding='utf-8-sig'))
-    except (ValueError, OSError) as exc:
-        raise ValueError('The listing draft file is unreadable.') from exc
+    if manifest is None:
+        if not path.exists():
+            return empty
+        if path.stat().st_size > MAX_MANIFEST_BYTES:
+            raise ValueError('The listing draft file is too large.')
+        try:
+            manifest = json.loads(path.read_text(encoding='utf-8-sig'))
+        except (ValueError, OSError) as exc:
+            raise ValueError('The listing draft file is unreadable.') from exc
     if not isinstance(manifest, dict) or not isinstance(manifest.get('drafts'), list) or len(manifest['drafts']) > MAX_DRAFTS:
         raise ValueError('The listing draft file has an invalid structure.')
     drafts = []

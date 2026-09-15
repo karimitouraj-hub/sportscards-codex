@@ -6,6 +6,7 @@ description: Review sports card photos, manage a local SportsCards collection, r
 # SportsCards
 
 Use the local SportsCards MCP tools for the collection when connected.
+Read [installation and checks](../../../docs/INSTALL.md) for automatic setup or connection failures.
 Read [MCP setup and tools](../../../docs/MCP.md) when tool configuration or schemas are needed.
 Read [the workflow](../../../docs/WORKFLOW.md) for dashboard operations and data limits.
 Read [pricing assumptions](../../../docs/PRICING_ENGINE.md) before interpreting simulations.
@@ -16,6 +17,10 @@ When browser tools are unavailable, continue local work with supplied evidence a
 Do not infer account access from a local MCP connection.
 
 ## Physical cards and photos
+
+Use `list_observations` to find current observations and crop revisions.
+Use `create_card`, `update_card`, and `link_observation` for supported local changes.
+Read the current card revision before an update. Keep parent photo review in the dashboard.
 
 - Treat a card record as one physical card and an observation as one view.
 - Link repeated photos and front/back views to the existing card when the evidence supports the match.
@@ -43,6 +48,11 @@ Use the user's authorized access. Respect access restrictions.
 This workflow does not require bulk scraping, hidden endpoints, paywall bypass, or extracted browser credentials.
 
 ## Analysis and listing preparation
+
+Use `record_sold_comparable` only for a reviewed match with a confirmed transaction price.
+Read `selling_prep` before creating or editing a draft with `save_listing_draft`.
+Supply the current manifest hash and card revision. Keep other cards in the batch unchanged.
+The draft tool calculates the identity signature and selected crop hashes.
 
 Keep sold estimates, asking scenarios, purchase costs, and unknown values distinct.
 State effective price, sale-probability, fee, and shipping assumptions with simulation results.
