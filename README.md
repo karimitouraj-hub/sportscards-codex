@@ -38,16 +38,23 @@ Use your own Codex access for the assistant workflow.
    cd sportscards-codex
    ```
 
-3. Start the application.
+3. Install the application and configure its local MCP connection.
+
+   ```text
+   python scripts/setup.py
+   ```
+
+4. Start the application.
 
    ```text
    python scripts/start.py
    ```
 
-4. Open [http://127.0.0.1:8097](http://127.0.0.1:8097).
+5. Open [http://127.0.0.1:8097](http://127.0.0.1:8097).
 
 On systems that use `python3`, use `python3 scripts/start.py`.
-The launcher creates `.venv`, installs dependencies, and builds the dashboard.
+Setup creates `.venv`, installs dependencies, builds the dashboard, and verifies the MCP connection.
+Read [installation and repair](docs/INSTALL.md) for setup checks and configuration details.
 The first launch requires internet access for dependency downloads.
 Press `Ctrl+C` in the terminal to stop the application.
 
@@ -58,7 +65,7 @@ Read the [collection workflow](docs/WORKFLOW.md) for the next steps.
 ## Connect Codex
 
 1. Open this repository as your Codex workspace.
-2. Follow [MCP setup](docs/MCP.md) to register the local server.
+2. Use the project configuration created by setup, or follow [manual MCP setup](docs/MCP.md).
 3. Start a new Codex conversation after registration.
 4. Ask Codex to use `$sportscards`.
 

@@ -21,10 +21,16 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Install Python dependencies
-        run: python -m pip install -r requirements-mcp.txt pytest
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-mcp.txt pytest
       - name: Test synthetic collection workflows
-        run: python -m pytest -q
+        run: .venv/bin/python -m pytest -q
       - name: Install dashboard dependencies
         run: npm ci
       - name: Build dashboard
         run: npm run build
+      - name: Configure and verify MCP installation
+        run: |
+          python scripts/setup.py --skip-install
+          python scripts/setup.py --check
